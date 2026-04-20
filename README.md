@@ -1,1 +1,330 @@
-# Water-Dk-meter
+```html
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ရေမီတာ</title>
+  
+  <meta name="theme-color" content="#1E3A8A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231E3A8A'/%3E%3Ctext x='50' y='68' font-family='sans-serif' font-weight='900' font-size='45' fill='white' text-anchor='middle'%3Ewt%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231E3A8A'/%3E%3Ctext x='50' y='68' font-family='sans-serif' font-weight='900' font-size='45' fill='white' text-anchor='middle'%3Ewt%3C/text%3E%3C/svg%3E">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased overflow-hidden">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const tips = [
+      { type: "စီးပွားရေး", text: "အချိန်နှင့်တပြေးညီ မှတ်တမ်းတင်ခြင်းသည် အချက်အလက်များ လွဲမှားမှုကို ကာကွယ်ပေးပြီး ဘဏ္ဍာရေး စစ်ဆေးရာတွင် လွယ်ကူစေသည်။" },
+      { type: "လူမှုရေး", text: "ရွာသူရွာသားများနှင့် ဆက်ဆံရာတွင် ပြေပြစ်သော စကားပြောဆိုမှုသည် ကော်မတီ၏ ပုံရိပ်ကို ကောင်းမွန်စေသည်။" },
+      { type: "ပညာရေး", text: "နည်းပညာအသစ်များကို လေ့လာအသုံးပြုခြင်းသည် မိမိကိုယ်ကိုရော၊ မိမိအသိုင်းအဝိုင်းကိုပါ တိုးတက်စေသော သင်ယူမှုဖြစ်သည်။" }
+    ];
+
+    const AppLogo = ({ className }) => (
+      <svg viewBox="0 0 100 100" className={className}>
+        <defs>
+          <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#1E3A8A" />
+          </linearGradient>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.15" />
+          </filter>
+        </defs>
+        <path d="M50 5 C50 5, 10 40, 10 70 C10 92, 28 100, 50 100 C72 100, 90 92, 90 70 C90 40, 50 5, 50 5 Z" fill="url(#blueGradient)" filter="url(#shadow)"/>
+        <text x="50" y="70" fontFamily="sans-serif" fontWeight="900" fontSize="40" fill="white" textAnchor="middle" letterSpacing="-2">wt</text>
+      </svg>
+    );
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('households');
+      const [dailyTip, setDailyTip] = useState(tips[0]);
+      
+      const [rate, setRate] = useState(() => {
+        const saved = localStorage.getItem('wt_rate');
+        return saved ? parseFloat(saved) : 88;
+      });
+      
+      const [collectorName, setCollectorName] = useState(() => localStorage.getItem('wt_collector') || '');
+
+      const [households, setHouseholds] = useState(() => {
+        const saved = localStorage.getItem('wt_households');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      const [vouchers, setVouchers] = useState(() => {
+        const saved = localStorage.getItem('wt_vouchers');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      const [searchQuery, setSearchQuery] = useState('');
+      const [showAddHouseModal, setShowAddHouseModal] = useState(false);
+      const [newHouseName, setNewHouseName] = useState('');
+      const [newHouseNo, setNewHouseNo] = useState('');
+      
+      const [selectedHouse, setSelectedHouse] = useState(null);
+      const [currentReading, setCurrentReading] = useState('');
+      const [voucherError, setVoucherError] = useState('');
+
+      useEffect(() => { setDailyTip(tips[Math.floor(Math.random() * tips.length)]); }, []);
+
+      useEffect(() => {
+        localStorage.setItem('wt_rate', rate.toString());
+        localStorage.setItem('wt_collector', collectorName);
+        localStorage.setItem('wt_households', JSON.stringify(households));
+        localStorage.setItem('wt_vouchers', JSON.stringify(vouchers));
+      }, [rate, collectorName, households, vouchers]);
+
+      const handleAddHousehold = () => {
+        if (!newHouseName.trim() || !newHouseNo.trim()) return;
+        const newHouse = { id: Date.now().toString(), houseNo: newHouseNo, ownerName: newHouseName, lastReading: 0 };
+        setHouseholds([...households, newHouse].sort((a, b) => a.houseNo.localeCompare(b.houseNo, undefined, {numeric: true})));
+        setNewHouseName(''); setNewHouseNo(''); setShowAddHouseModal(false);
+      };
+
+      const handleSaveVoucher = () => {
+        setVoucherError('');
+        if (!selectedHouse) return;
+        if (!collectorName.trim()) { setVoucherError("ဆက်တင်တွင် ကောက်ခံသူအမည်ကို အရင်ထည့်ပါ။"); return; }
+
+        const readingValue = parseFloat(currentReading);
+        if (isNaN(readingValue)) { setVoucherError("ဂဏန်းမှန်ကန်စွာ ထည့်ပါ။"); return; }
+
+        const usage = readingValue - selectedHouse.lastReading;
+        if (usage < 0) { setVoucherError("ယခုဂဏန်းသည် ယခင်လ ဂဏန်းထက် ငယ်နေပါသည်။"); return; }
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB');
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        const newVoucher = {
+          id: Date.now().toString(), houseId: selectedHouse.id, houseNo: selectedHouse.houseNo, ownerName: selectedHouse.ownerName,
+          collectorName: collectorName, date: dateStr, time: timeStr, previousReading: selectedHouse.lastReading,
+          currentReading: readingValue, usage: usage, rate: rate, totalCost: usage * rate, timestamp: now.getTime()
+        };
+
+        setVouchers([newVoucher, ...vouchers]);
+        const updatedHouseholds = households.map(h => h.id === selectedHouse.id ? { ...h, lastReading: readingValue } : h);
+        setHouseholds(updatedHouseholds);
+        setCurrentReading(''); setSelectedHouse(null); setActiveTab('vouchers');
+      };
+
+      const renderHouseholdsList = () => {
+        const filteredHouses = households.filter(h => h.houseNo.includes(searchQuery) || h.ownerName.includes(searchQuery));
+        return (
+          <div className="flex flex-col gap-4 p-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i className="fas fa-search text-gray-400"></i>
+              </div>
+              <input type="text" placeholder="အိမ်အမှတ် သို့မဟုတ် အမည်ရှာရန်..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 shadow-sm" />
+            </div>
+            <button onClick={() => setShowAddHouseModal(true)} className="bg-blue-50 text-blue-700 border border-blue-200 py-3 rounded-xl flex justify-center items-center gap-2 font-semibold hover:bg-blue-100">
+              <i className="fas fa-user-plus"></i> အိမ်ထောင်စု အသစ်ထည့်မည်
+            </button>
+            {households.length === 0 ? (
+              <div className="text-center py-10 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                 <i className="fas fa-users text-4xl text-gray-300 mb-3 block"></i>
+                 <p className="text-gray-500 text-sm">အိမ်ထောင်စု စာရင်း မရှိသေးပါ။<br/>အသစ်ထည့်ရန် ခလုတ်ကို နှိပ်ပါ။</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 pb-20">
+                {filteredHouses.map(house => (
+                  <div key={house.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-gray-100 text-gray-700 text-xs font-bold px-2 py-0.5 rounded">အိမ် - {house.houseNo}</span>
+                        <h3 className="font-bold text-gray-800">{house.ownerName}</h3>
+                      </div>
+                      <p className="text-xs text-gray-500">နောက်ဆုံး မီတာဂဏန်း: <span className="font-bold text-gray-700">{house.lastReading}</span></p>
+                    </div>
+                    <button onClick={() => { setSelectedHouse(house); setActiveTab('entry'); }} className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 active:scale-95 flex items-center gap-1">
+                      <i className="fas fa-file-invoice"></i> ဖြတ်မည်
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showAddHouseModal && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+                <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><i className="fas fa-user-plus text-blue-600"></i> အိမ်အသစ်ထည့်ရန်</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">အိမ်အမှတ် / ခြံအမှတ်</label>
+                      <input type="text" value={newHouseNo} onChange={e => setNewHouseNo(e.target.value)} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500" placeholder="ဥပမာ - ၀၀၁"/>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">အိမ်ရှင်အမည်</label>
+                      <input type="text" value={newHouseName} onChange={e => setNewHouseName(e.target.value)} className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500" placeholder="ဥပမာ - ဦးဘ"/>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button onClick={() => setShowAddHouseModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold">ပယ်ဖျက်မည်</button>
+                    <button onClick={handleAddHousehold} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-semibold shadow-md">သိမ်းမည်</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const renderVoucherEntry = () => {
+        if (!selectedHouse) return null;
+        const currentVal = parseFloat(currentReading);
+        let estimatedUsage = 0; let estimatedCost = 0;
+        if (!isNaN(currentVal)) { estimatedUsage = currentVal - selectedHouse.lastReading; estimatedCost = estimatedUsage > 0 ? estimatedUsage * rate : 0; }
+
+        return (
+          <div className="flex flex-col gap-4 p-4">
+            <button onClick={() => setSelectedHouse(null)} className="text-blue-600 text-sm font-semibold flex items-center gap-1 w-fit mb-2">
+              <i className="fas fa-arrow-left"></i> နောက်သို့
+            </button>
+            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+              <AppLogo className="absolute -right-6 -top-6 w-32 h-32 opacity-10" />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                  <div><p className="text-blue-200 text-xs font-medium mb-1">အိမ်အမှတ်</p><p className="text-xl font-bold">{selectedHouse.houseNo}</p></div>
+                  <div className="text-right"><p className="text-blue-200 text-xs font-medium mb-1">အိမ်ရှင်</p><p className="text-lg font-semibold">{selectedHouse.ownerName}</p></div>
+                </div>
+                <div className="bg-white/20 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm border border-white/10">
+                  <span className="text-sm text-blue-100">ယခင်လ မီတာဂဏန်း</span><span className="font-bold text-xl">{selectedHouse.lastReading}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mt-2">
+              <label className="block text-gray-700 font-bold mb-3 text-lg">ယခုလ မီတာဂဏန်း ထည့်ပါ</label>
+              <input type="number" value={currentReading} onChange={(e) => setCurrentReading(e.target.value)} placeholder="၁၀၅၀" autoFocus
+                className="w-full bg-gray-50 border-2 border-blue-100 text-gray-900 text-2xl font-bold rounded-xl outline-none focus:border-blue-500 block p-4 text-center tracking-wider" />
+              {voucherError && <p className="text-red-500 text-sm mt-2 font-medium text-center">{voucherError}</p>}
+            </div>
+            {!isNaN(currentVal) && estimatedUsage > 0 && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-gray-50"><span className="text-gray-500">သုံးစွဲမှု</span><span className="font-bold text-lg">{estimatedUsage} <span className="text-sm font-normal text-gray-500">ယူနစ်</span></span></div>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-50"><span className="text-gray-500">နှုန်းထား</span><span className="font-medium text-gray-700">{rate} <span className="text-sm font-normal text-gray-500">ကျပ်</span></span></div>
+                <div className="flex justify-between items-center pt-1"><span className="font-bold text-gray-800">ကျသင့်ငွေ</span><span className="font-black text-2xl text-blue-600">{estimatedCost.toLocaleString()} <span className="text-base font-normal text-gray-500">ကျပ်</span></span></div>
+              </div>
+            )}
+            <button onClick={handleSaveVoucher} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl flex justify-center items-center gap-2 active:scale-95 shadow-md mt-4">
+              <i className="fas fa-save"></i> ဘောင်ချာ သိမ်းမည်
+            </button>
+          </div>
+        );
+      };
+
+      const renderHistory = () => (
+        <div className="flex flex-col gap-4 p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="font-bold text-lg text-gray-800 flex items-center gap-2"><i className="fas fa-history text-blue-600"></i> မှတ်တမ်းများ</h2>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium">{vouchers.length} စောင်</span>
+          </div>
+          {vouchers.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl border border-gray-100"><i className="fas fa-file-invoice text-4xl text-gray-200 mb-3 block"></i><p className="text-gray-500 text-sm">မှတ်တမ်း မရှိသေးပါ။</p></div>
+          ) : (
+            <div className="flex flex-col gap-4 pb-20">
+              {vouchers.map(v => (
+                <div key={v.id} className="bg-white rounded-2xl p-0 shadow-sm border border-gray-100 relative">
+                  <div className="bg-gray-50 p-3 border-b border-gray-100 flex justify-between items-center">
+                    <div className="flex items-center gap-2"><i className="fas fa-check-circle text-green-500"></i><span className="font-bold text-gray-700">အိမ် - {v.houseNo}</span></div>
+                    <div className="text-right"><p className="text-[10px] text-gray-500 font-medium">{v.date}</p><p className="text-[10px] text-gray-400 mt-0.5"><i className="far fa-clock"></i> {v.time}</p></div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                       <div><p className="text-xs text-gray-500 mb-0.5">အိမ်ရှင်</p><p className="font-bold text-gray-800">{v.ownerName}</p></div>
+                       <div className="text-right"><p className="text-xs text-gray-500 mb-0.5">ကောက်ခံသူ</p><p className="font-medium text-gray-700">{v.collectorName}</p></div>
+                    </div>
+                    <div className="bg-blue-50/50 rounded-lg p-3 grid grid-cols-3 gap-2 text-center border border-blue-50">
+                      <div><p className="text-[10px] text-gray-500 mb-1">ယခင်</p><p className="font-semibold text-gray-700">{v.previousReading}</p></div>
+                      <div className="border-x border-blue-100"><p className="text-[10px] text-gray-500 mb-1">ယခု</p><p className="font-bold text-blue-700">{v.currentReading}</p></div>
+                      <div><p className="text-[10px] text-gray-500 mb-1">သုံးစွဲမှု</p><p className="font-semibold text-gray-800">{v.usage}</p></div>
+                    </div>
+                    <div className="mt-4 flex justify-between items-end">
+                      <p className="text-xs text-gray-500">၁ ယူနစ် = {v.rate} ကျပ်</p>
+                      <div className="text-right"><p className="text-[10px] text-gray-500 mb-0.5">ကျသင့်ငွေ</p><p className="font-black text-xl text-blue-600">{v.totalCost.toLocaleString()} ကျပ်</p></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+      const renderSettings = () => (
+        <div className="flex flex-col gap-4 p-4 pb-20">
+          <h2 className="font-bold text-lg text-gray-800 flex items-center gap-2"><i className="fas fa-cog text-blue-600"></i> ဆက်တင်</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+            <span className="bg-blue-200 p-1 rounded text-blue-800 text-[10px] uppercase font-bold mb-2 inline-block">{dailyTip.type}</span>
+            <p className="text-gray-700 text-sm font-medium">"{dailyTip.text}"</p>
+          </div>
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="mb-6">
+              <label className="block text-gray-700 font-semibold mb-2 text-sm">ကောက်ခံသူ အမည်</label>
+              <input type="text" value={collectorName} onChange={(e) => setCollectorName(e.target.value)} placeholder="အမည်ထည့်ပါ" className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-xl p-3 outline-none" />
+            </div>
+            <div className="mb-6">
+              <label className="block text-gray-700 font-semibold mb-2 text-sm">နှုန်းထား (၁ ယူနစ် လျှင်)</label>
+              <div className="flex items-center gap-2">
+                <input type="number" value={rate} onChange={(e) => setRate(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-xl p-3 outline-none" />
+                <span className="font-bold text-gray-600">ကျပ်</span>
+              </div>
+            </div>
+            <hr className="mb-6" />
+            <button onClick={() => { if(window.confirm("ဒေတာများအားလုံး ဖျက်မည် သေချာပါသလား?")) { setHouseholds([]); setVouchers([]); localStorage.clear(); } }} className="w-full font-bold py-3 px-4 rounded-xl flex justify-center items-center gap-2 bg-red-50 text-red-600">
+              <i className="fas fa-trash-alt"></i> အားလုံးဖျက်မည်
+            </button>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="h-screen w-full flex flex-col relative bg-gray-50 max-w-md mx-auto shadow-xl">
+          <header className="bg-white pt-6 pb-4 px-5 shadow-sm z-10 flex items-center gap-3">
+             <AppLogo className="w-10 h-10" />
+             <div>
+               <h1 className="font-black text-lg text-gray-800 leading-none">ရေမီတာ ဘောင်ချာ</h1>
+               <p className="text-gray-500 text-[10px] font-bold mt-1 uppercase">မန်ကျည်းဖြူကျေးရွာ</p>
+             </div>
+          </header>
+          <main className="flex-1 overflow-y-auto">
+            {activeTab === 'households' && renderHouseholdsList()}
+            {activeTab === 'entry' && renderVoucherEntry()}
+            {activeTab === 'vouchers' && renderHistory()}
+            {activeTab === 'settings' && renderSettings()}
+          </main>
+          <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 z-20 pb-safe">
+            <div className="flex justify-around p-1">
+              <button onClick={() => setActiveTab('households')} className={`flex-1 flex flex-col items-center py-2 ${activeTab === 'households' || activeTab === 'entry' ? 'text-blue-600' : 'text-gray-400'}`}><i className="fas fa-users text-xl"></i><span className="text-[10px] font-bold mt-1">စာရင်း</span></button>
+              <button onClick={() => setActiveTab('vouchers')} className={`flex-1 flex flex-col items-center py-2 ${activeTab === 'vouchers' ? 'text-blue-600' : 'text-gray-400'}`}><i className="fas fa-file-invoice text-xl"></i><span className="text-[10px] font-bold mt-1">ဘောင်ချာ</span></button>
+              <button onClick={() => setActiveTab('settings')} className={`flex-1 flex flex-col items-center py-2 ${activeTab === 'settings' ? 'text-blue-600' : 'text-gray-400'}`}><i className="fas fa-cog text-xl"></i><span className="text-[10px] font-bold mt-1">ဆက်တင်</span></button>
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+
+
+```
